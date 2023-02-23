@@ -1,0 +1,5 @@
+package starprober
+
+func main() {
+
+}
