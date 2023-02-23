@@ -1,23 +1,50 @@
 package prober
 
 import (
-	"github.com/fsnotify/fsnotify"
 	"log"
+
+	"github.com/fsnotify/fsnotify"
 )
 
-type DirListen struct {
+type DirListener struct {
 	dir string
 }
 
-func Listen() {
+func (l *DirListener) Listen() {
 	watch, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer watch.Close()
-	//添加要监控的对象，文件或文件夹
-	err = watch.Add()
+	err = watch.Add(l.dir)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	go func() {
+		for {
+			select {
+			case ev := <-watch.Events:
+				{
+					if ev.Op&fsnotify.Create == fsnotify.Create {
+						log.Println("Create File:", ev.Name)
+					}
+					if ev.Op&fsnotify.Write == fsnotify.Write {
+						log.Println("Write File:", ev.Name)
+					}
+					if ev.Op&fsnotify.Remove == fsnotify.Remove {
+						log.Println("Delete File:", ev.Name)
+					}
+					if ev.Op&fsnotify.Rename == fsnotify.Rename {
+						log.Println("Rename File:", ev.Name)
+					}
+				}
+			case err := <-watch.Errors:
+				{
+					log.Println("error: ", err)
+					return
+				}
+			}
+		}
+	}()
 }
